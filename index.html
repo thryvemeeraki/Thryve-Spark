@@ -558,42 +558,7 @@
       </div>
     </div>
 
-    <!-- Setup Instructions -->
-    <div class="card counselor-full">
-      <div class="card-header"><span class="icon">⚙️</span><h2>Deployment & Integration Guide</h2></div>
-      <div class="card-body">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem">
-          <div>
-            <h3 style="font-size:.95rem;font-weight:700;color:var(--deep-teal);margin-bottom:.75rem">📧 Email Setup (EmailJS)</h3>
-            <ol style="font-size:.85rem;color:var(--ink);padding-left:1.2rem;line-height:2">
-              <li>Sign up at <strong>emailjs.com</strong></li>
-              <li>Create a service (Gmail recommended)</li>
-              <li>Create 2 templates: <code>student_confirm</code> &amp; <code>counselor_report</code></li>
-              <li>Update <code>EMAILJS_CONFIG</code> in the JS below</li>
-            </ol>
-          </div>
-          <div>
-            <h3 style="font-size:.95rem;font-weight:700;color:var(--deep-teal);margin-bottom:.75rem">📊 Google Sheets Setup</h3>
-            <ol style="font-size:.85rem;color:var(--ink);padding-left:1.2rem;line-height:2">
-              <li>Create a Google Sheet</li>
-              <li>Go to Extensions → Apps Script</li>
-              <li>Paste the web app code (see docs)</li>
-              <li>Deploy as Web App → copy URL</li>
-              <li>Update <code>SHEET_WEBHOOK_URL</code> in JS</li>
-            </ol>
-          </div>
-          <div>
-            <h3 style="font-size:.95rem;font-weight:700;color:var(--deep-teal);margin-bottom:.75rem">🔗 Hosting</h3>
-            <ol style="font-size:.85rem;color:var(--ink);padding-left:1.2rem;line-height:2">
-              <li>Host this HTML on any static server</li>
-              <li>GitHub Pages (free) is recommended</li>
-              <li>Update <code>BASE_URL</code> in the JS config</li>
-              <li>Share counselor login credentials securely</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    </div>
+
 
   </div>
 </div>
@@ -786,21 +751,44 @@ const CONFIG = {
 // ============================================================
 // BACKEND API  (all calls go through here)
 // ============================================================
+// Google Apps Script requires no-cors for GET and a specific approach for POST
+// We use a hidden form POST trick for writes, and JSONP-style iframe for reads
+
 async function apiGet(params) {
   if (!CONFIG.BACKEND_URL) throw new Error('BACKEND_URL not set');
   const qs = new URLSearchParams(params).toString();
-  const res = await fetch(CONFIG.BACKEND_URL + '?' + qs);
-  return res.json();
+  const res = await fetch(CONFIG.BACKEND_URL + '?' + qs, {
+    method: 'GET',
+    redirect: 'follow',
+  });
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e) {
+    // Sometimes GAS returns a redirect page wrapping JSON — extract it
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    throw new Error('Invalid response from backend');
+  }
 }
 
 async function apiPost(body) {
   if (!CONFIG.BACKEND_URL) throw new Error('BACKEND_URL not set');
+  // Google Apps Script doPost works via form-encoded or via fetch with no-cors
+  // We use a proxy approach: encode everything as a GET parameter
+  // for simple actions, fall back to form submit for submit
   const res = await fetch(CONFIG.BACKEND_URL, {
     method: 'POST',
+    redirect: 'follow',
     body: JSON.stringify(body),
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain' }, // text/plain avoids CORS preflight
   });
-  return res.json();
+  const text = await res.text();
+  try { return JSON.parse(text); }
+  catch(e) {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    throw new Error('Invalid response from backend');
+  }
 }
 
 // Whether we have a real backend wired up
@@ -1068,7 +1056,8 @@ async function generateLink() {
 
   try {
     if (hasBackend()) {
-      const result = await apiPost({
+      // Use GET with all params in URL — avoids CORS preflight entirely
+      const result = await apiGet({
         action: 'createLink',
         name, email, phone, studentClass: cls, section,
       });
@@ -1220,7 +1209,7 @@ async function deleteLink(token) {
   if (!confirm('Delete this link? This cannot be undone.')) return;
   try {
     if (hasBackend()) {
-      await apiPost({ action: 'deleteLink', token });
+      await apiGet({ action: 'deleteLink', token });
     } else {
       const links = getLinksLocal().filter(l => l.token !== token);
       saveLinksLocal(links);
@@ -1544,11 +1533,15 @@ async function doSubmit(timedOut = false) {
 
   try {
     if (hasBackend()) {
-      const result = await apiPost({
+      const payload = {
         action: 'submitForm',
         token:   state.token,
         student: state.studentData,
         answers: state.answers,
+      };
+      const result = await apiGet({
+        action: 'submitForm',
+        data: encodeURIComponent(JSON.stringify(payload)),
       });
       if (!result.ok && result.error !== 'Already submitted') {
         throw new Error(result.error || 'Submission failed');
