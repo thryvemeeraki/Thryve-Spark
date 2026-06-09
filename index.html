@@ -393,7 +393,118 @@
   /* ===================== PRINT / PDF area (hidden iframe) ===================== */
   #pdf-frame { display: none; }
 
-  @media print {
+  /* ===================== CALENDAR PICKER ===================== */
+  .dob-picker, .time-picker { position: relative; }
+  .dob-display, .time-display {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .85rem 1rem;
+    border: 2px solid var(--border); border-radius: var(--radius-sm);
+    cursor: pointer; background: var(--white); transition: border-color .2s;
+    font-size: .9rem; user-select: none;
+  }
+  .dob-display:hover, .time-display:hover { border-color: var(--mid-teal); }
+  .dob-icon { font-size: 1.1rem; }
+
+  .calendar-popup, .clock-popup {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+    background: var(--white); border: 2px solid var(--mid-teal);
+    border-radius: var(--radius); box-shadow: 0 8px 32px rgba(13,27,42,.18);
+    z-index: 200; padding: 1rem;
+  }
+
+  /* Calendar nav */
+  .cal-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: .6rem;
+  }
+  .cal-btn {
+    background: var(--off-white); border: 1px solid var(--border);
+    border-radius: 6px; width: 30px; height: 30px; cursor: pointer;
+    font-size: .9rem; font-weight: 700; color: var(--deep-teal);
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s;
+  }
+  .cal-btn:hover { background: var(--mid-teal); color: #fff; border-color: var(--mid-teal); }
+  .cal-title { font-weight: 700; color: var(--deep-teal); font-size: .95rem; }
+
+  .cal-selects { display: flex; gap: .5rem; margin-bottom: .75rem; }
+  .cal-select {
+    flex: 1; padding: .4rem .6rem; border: 2px solid var(--border);
+    border-radius: 6px; font-size: .82rem; color: var(--ink);
+    background: var(--white); cursor: pointer; outline: none;
+  }
+  .cal-select:focus { border-color: var(--mid-teal); }
+
+  .cal-days-header {
+    display: grid; grid-template-columns: repeat(7,1fr);
+    text-align: center; margin-bottom: .35rem;
+  }
+  .cal-days-header span {
+    font-size: .72rem; font-weight: 700; color: var(--muted);
+    padding: .2rem 0;
+  }
+  .cal-days {
+    display: grid; grid-template-columns: repeat(7,1fr); gap: 2px;
+  }
+  .cal-day {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; cursor: pointer; font-size: .82rem; font-weight: 500;
+    transition: all .15s; color: var(--ink);
+  }
+  .cal-day:hover { background: #e0f0f4; color: var(--mid-teal); font-weight: 700; }
+  .cal-day.today { border: 2px solid var(--mid-teal); color: var(--mid-teal); font-weight: 700; }
+  .cal-day.selected { background: var(--spark); color: var(--ink); font-weight: 800; }
+  .cal-day.other-month { color: var(--border); cursor: default; }
+  .cal-day.other-month:hover { background: none; }
+
+  /* Clock picker */
+  .clock-face-wrap { }
+  .clock-cols {
+    display: flex; align-items: flex-start; gap: .5rem;
+    justify-content: center;
+  }
+  .clock-col { display: flex; flex-direction: column; align-items: center; flex: 1; }
+  .clock-sep {
+    font-size: 1.5rem; font-weight: 800; color: var(--deep-teal);
+    padding-top: 1.8rem; flex-shrink: 0;
+  }
+  .clock-label {
+    font-size: .7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); margin-bottom: .4rem;
+  }
+  .clock-scroll {
+    display: flex; flex-direction: column; gap: 2px;
+    max-height: 180px; overflow-y: auto;
+    border: 2px solid var(--border); border-radius: 8px;
+    padding: .3rem; width: 100%;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .clock-scroll::-webkit-scrollbar { width: 4px; }
+  .clock-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .clk-item {
+    padding: .4rem .5rem; border-radius: 6px; cursor: pointer;
+    font-size: .88rem; font-weight: 500; text-align: center;
+    transition: all .15s; color: var(--ink);
+  }
+  .clk-item:hover { background: #e0f0f4; color: var(--mid-teal); font-weight: 700; }
+  .clk-item.selected { background: var(--spark); color: var(--ink); font-weight: 800; }
+
+  .ampm-btn {
+    padding: .5rem 1rem; border-radius: 8px; cursor: pointer;
+    font-size: .85rem; font-weight: 700; border: 2px solid var(--border);
+    background: var(--white); color: var(--ink); transition: all .15s;
+    width: 100%; text-align: center;
+  }
+  .ampm-btn:hover { border-color: var(--mid-teal); color: var(--mid-teal); }
+  .ampm-btn.ampm-active { background: var(--spark); border-color: var(--spark); color: var(--ink); }
+
+  .time-preview {
+    text-align: center; font-size: 1.6rem; font-weight: 800;
+    color: var(--deep-teal); padding: .6rem 0 0;
+    font-family: var(--font-mono); letter-spacing: 2px;
+  }
+
+  /* ===================== END CALENDAR/CLOCK ===================== */
     .navbar, .timer-wrap, .progress-wrap, .section-nav, .step-dots, .assessment-nav { display: none !important; }
     .question-block { page-break-inside: avoid; box-shadow: none; border: 1px solid var(--border); }
   }
@@ -1234,19 +1345,19 @@ async function openStudentForm(token) {
   state.token = token;
   showPage('student');
 
-  // Show loading
   document.getElementById('student-details-gate').style.display = 'block';
   document.getElementById('assessment-form-wrap').style.display = 'none';
   document.getElementById('details-error').style.display = 'none';
 
-  // Check timer resume first (page refresh case)
+  // ── RESUME: only if this exact token has an active in-progress session ──
   const savedTimer   = localStorage.getItem('thryve_timer_' + token);
   const savedAnswers = localStorage.getItem('thryve_answers_' + token);
   const savedStudent = localStorage.getItem('thryve_student_' + token);
 
   if (savedTimer && savedStudent) {
-    state.timerEnd   = parseInt(savedTimer);
-    state.answers    = savedAnswers ? JSON.parse(savedAnswers) : {};
+    // Valid in-progress session — resume it (timer was already running)
+    state.timerEnd    = parseInt(savedTimer);
+    state.answers     = savedAnswers ? JSON.parse(savedAnswers) : {};
     state.studentData = JSON.parse(savedStudent);
     if (state.timerEnd <= Date.now()) { doSubmit(true); return; }
     prefillDetailsFromState();
@@ -1254,28 +1365,39 @@ async function openStudentForm(token) {
     return;
   }
 
-  // Validate token via backend
+  // ── NEW OPEN: call openLink immediately — marks as 'used' in sheet right now ──
+  // This means the link is consumed the instant the student lands on the page
   let linkInfo = null;
   try {
     if (hasBackend()) {
-      const res = await apiGet({ action: 'getLink', token });
-      if (!res.ok || !res.token) throw new Error('not_found');
-      if (res.status === 'complete' || res.status === 'used') {
-        showInvalid('This assessment link has already been used and cannot be opened again. Please contact your counselor if you need a new link.'); return;
+      // openLink returns the student data AND marks used in one call
+      const res = await apiGet({ action: 'openLink', token });
+
+      if (!res.ok) {
+        // already used, already complete, or not found
+        const reason = res.status === 'complete'
+          ? 'This assessment has already been submitted.'
+          : res.status === 'used'
+          ? 'This assessment link has already been opened and cannot be accessed again. Please contact your counselor for a new link.'
+          : 'This assessment link is invalid or does not exist.';
+        showInvalid(reason);
+        return;
       }
-      linkInfo = res;
+      linkInfo = res; // contains name, email, phone, class, section
     } else {
+      // Local fallback
       linkInfo = getLinkLocalByToken(token);
-      if (!linkInfo) throw new Error('not_found');
-      if (linkInfo.status === 'complete' || linkInfo.status === 'used') {
-        showInvalid('This assessment link has already been used and cannot be opened again. Please contact your counselor if you need a new link.'); return;
-      }
+      if (!linkInfo) { showInvalid('This assessment link is invalid or does not exist.'); return; }
+      if (linkInfo.status === 'complete') { showInvalid('This assessment has already been submitted.'); return; }
+      if (linkInfo.status === 'used')     { showInvalid('This assessment link has already been opened and cannot be accessed again. Please contact your counselor for a new link.'); return; }
+      // Mark used immediately
+      updateLinkLocal(token, { status: 'used' });
     }
   } catch(e) {
-    showInvalid('This assessment link is invalid or does not exist.'); return;
+    showInvalid('Unable to verify this link. Please check your internet connection and try again.'); return;
   }
 
-  // Pre-fill details
+  // Pre-fill details from what counselor entered
   if (linkInfo.name)         document.getElementById('std-name').value    = linkInfo.name;
   if (linkInfo.email)        document.getElementById('std-email').value   = linkInfo.email;
   if (linkInfo.phone)        document.getElementById('std-phone').value   = linkInfo.phone;
@@ -1320,14 +1442,7 @@ async function beginAssessment() {
 
   state.studentData = { name, email, phone, studentClass: cls, section: sec };
 
-  try {
-    // Mark link as active in backend
-    if (hasBackend()) {
-      await apiGet({ action: 'openLink', token: state.token });
-    } else {
-      updateLinkLocal(state.token, { status: 'active', name, email, phone, studentClass: cls, section: sec });
-    }
-  } catch(e) { /* non-fatal */ }
+  // Note: link is already marked 'used' the moment openStudentForm loaded — no need to call openLink again
 
   // Start timer
   state.timerEnd = Date.now() + CONFIG.TIMER_HOURS * 3600 * 1000;
@@ -1379,8 +1494,93 @@ function renderSection(idx) {
 
     if (q.type === 'text-input' || q.type === 'date-input') {
       const val = state.answers[qId] || '';
-      html += `
-        <div class="question-block ${val ? 'answered' : ''}" id="qb-${qId}">
+
+      // ── Date of Birth — calendar picker ──
+      if (qId === 's8q13') {
+        html += `<div class="question-block ${val ? 'answered' : ''}" id="qb-${qId}">
+          <div class="q-num">Question ${qi+1}</div>
+          <div class="q-text">Date of Birth *</div>
+          <div class="dob-picker" id="dobpicker-${qId}">
+            <div class="dob-display" onclick="toggleCalendar('${qId}')">
+              <span class="dob-icon">📅</span>
+              <span id="dob-display-${qId}" style="flex:1;color:${val ? 'var(--ink)' : 'var(--muted)'}">${val || 'Select your date of birth'}</span>
+              <span style="color:var(--muted);font-size:.8rem">▼</span>
+            </div>
+            <div class="calendar-popup" id="cal-${qId}" style="display:none">
+              <div class="cal-nav">
+                <button type="button" onclick="calNav('${qId}',-1,'year')" class="cal-btn">‹‹</button>
+                <button type="button" onclick="calNav('${qId}',-1,'month')" class="cal-btn">‹</button>
+                <span id="cal-title-${qId}" class="cal-title"></span>
+                <button type="button" onclick="calNav('${qId}',1,'month')" class="cal-btn">›</button>
+                <button type="button" onclick="calNav('${qId}',1,'year')" class="cal-btn">››</button>
+              </div>
+              <div class="cal-selects">
+                <select id="cal-month-${qId}" onchange="calSelectMonth('${qId}',this.value)" class="cal-select"></select>
+                <select id="cal-year-${qId}" onchange="calSelectYear('${qId}',this.value)" class="cal-select"></select>
+              </div>
+              <div class="cal-days-header">
+                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+              </div>
+              <div class="cal-days" id="cal-days-${qId}"></div>
+            </div>
+          </div>
+        </div>`;
+        return;
+      }
+
+      // ── Time of Birth — clock picker with AM/PM ──
+      if (qId === 's8q14') {
+        const parts = val.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        const hv = parts ? parts[1].padStart(2,'0') : '09';
+        const mv = parts ? parts[2] : '00';
+        const ap = parts ? parts[3].toUpperCase() : 'AM';
+        html += `<div class="question-block ${val ? 'answered' : ''}" id="qb-${qId}">
+          <div class="q-num">Question ${qi+1}</div>
+          <div class="q-text">Time of Birth *</div>
+          <div class="time-picker">
+            <div class="time-display" onclick="toggleClock('${qId}')">
+              <span class="dob-icon">🕐</span>
+              <span id="time-display-${qId}" style="flex:1;color:${val ? 'var(--ink)' : 'var(--muted)'}">${val || 'Select time of birth'}</span>
+              <span style="color:var(--muted);font-size:.8rem">▼</span>
+            </div>
+            <div class="clock-popup" id="clk-${qId}" style="display:none">
+              <div class="clock-face-wrap">
+                <div class="clock-cols">
+                  <div class="clock-col">
+                    <div class="clock-label">Hour</div>
+                    <div class="clock-scroll" id="clk-h-${qId}">
+                      ${Array.from({length:12},(_,i)=>{const h=String(i+1).padStart(2,'0');return '<div class="clk-item '+(h===hv?'selected':'')+'" onclick="clkSet(\'${qId}\',\'h\',\''+h+'\')">'+h+'</div>';}).join('')}
+                    </div>
+                  </div>
+                  <div class="clock-sep">:</div>
+                  <div class="clock-col">
+                    <div class="clock-label">Minute</div>
+                    <div class="clock-scroll" id="clk-m-${qId}">
+                      ${Array.from({length:12},(_,i)=>{const m=String(i*5).padStart(2,'0');return '<div class="clk-item '+(m===mv?'selected':'')+'" onclick="clkSet(\'${qId}\',\'m\',\''+m+'\')">'+m+'</div>';}).join('')}
+                    </div>
+                  </div>
+                  <div class="clock-col">
+                    <div class="clock-label">AM/PM</div>
+                    <div style="display:flex;flex-direction:column;gap:.4rem;padding:.4rem 0">
+                      <button type="button" id="clk-am-${qId}" class="ampm-btn ${ap==='AM'?'ampm-active':''}" onclick="clkSet('${qId}','ap','AM')">AM</button>
+                      <button type="button" id="clk-pm-${qId}" class="ampm-btn ${ap==='PM'?'ampm-active':''}" onclick="clkSet('${qId}','ap','PM')">PM</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="time-preview" id="time-preview-${qId}">${hv}:${mv} ${ap}</div>
+              </div>
+              <button type="button" class="btn btn-spark btn-sm" style="width:100%;margin-top:.75rem" onclick="confirmTime('${qId}')">✓ Confirm Time</button>
+            </div>
+          </div>
+          <input type="hidden" id="time-h-${qId}" value="${hv}"/>
+          <input type="hidden" id="time-m-${qId}" value="${mv}"/>
+          <input type="hidden" id="time-ap-${qId}" value="${ap}"/>
+        </div>`;
+        return;
+      }
+
+      // ── Place of Birth — regular text input ──
+      html += `<div class="question-block ${val ? 'answered' : ''}" id="qb-${qId}">
           <div class="q-num">Question ${qi+1}</div>
           <div class="q-text">${q.text} *</div>
           <input type="text" style="width:100%;padding:.75rem 1rem;border:2px solid var(--border);border-radius:8px;font-size:.9rem;font-family:var(--font);outline:none;transition:border-color .2s"
@@ -1719,6 +1919,195 @@ function esc(str) {
 }
 
 function printResponse() { window.print(); }
+
+// ============================================================
+// CALENDAR PICKER  (Date of Birth)
+// ============================================================
+const CAL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const calState = {}; // { qId: { year, month } }
+
+function toggleCalendar(qId) {
+  const popup = document.getElementById('cal-' + qId);
+  const isOpen = popup.style.display !== 'none';
+  // Close all open pickers first
+  document.querySelectorAll('.calendar-popup,.clock-popup').forEach(p => p.style.display = 'none');
+  if (isOpen) return;
+
+  // Init state — default to a sensible starting year (2009 for students)
+  if (!calState[qId]) {
+    const existing = state.answers[qId];
+    if (existing) {
+      const parts = existing.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if (parts) { calState[qId] = { year: parseInt(parts[3]), month: parseInt(parts[2]) - 1 }; }
+    }
+    if (!calState[qId]) calState[qId] = { year: 2009, month: 0 };
+  }
+
+  buildCalendar(qId);
+  popup.style.display = 'block';
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function handler(e) {
+      if (!document.getElementById('dobpicker-' + qId).contains(e.target)) {
+        popup.style.display = 'none';
+        document.removeEventListener('click', handler);
+      }
+    });
+  }, 10);
+}
+
+function buildCalendar(qId) {
+  const { year, month } = calState[qId];
+
+  // Title
+  document.getElementById('cal-title-' + qId).textContent = CAL_MONTHS[month] + ' ' + year;
+
+  // Month select
+  const mSel = document.getElementById('cal-month-' + qId);
+  mSel.innerHTML = CAL_MONTHS.map((m,i) => `<option value="${i}" ${i===month?'selected':''}>${m}</option>`).join('');
+
+  // Year select (1990–current year)
+  const curYear = new Date().getFullYear();
+  const ySel = document.getElementById('cal-year-' + qId);
+  ySel.innerHTML = '';
+  for (let y = curYear; y >= 1980; y--) {
+    ySel.innerHTML += `<option value="${y}" ${y===year?'selected':''}>${y}</option>`;
+  }
+
+  // Days grid
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  const selectedVal = state.answers[qId] || '';
+  const selectedParts = selectedVal.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  const selDay   = selectedParts ? parseInt(selectedParts[1]) : -1;
+  const selMonth = selectedParts ? parseInt(selectedParts[2]) - 1 : -1;
+  const selYear  = selectedParts ? parseInt(selectedParts[3]) : -1;
+
+  let daysHtml = '';
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) daysHtml += '<div class="cal-day other-month"></div>';
+  // Actual days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday   = (d===today.getDate() && month===today.getMonth() && year===today.getFullYear());
+    const isSel     = (d===selDay && month===selMonth && year===selYear);
+    daysHtml += `<div class="cal-day ${isToday?'today':''} ${isSel?'selected':''}" onclick="calPickDay('${qId}',${d})">${d}</div>`;
+  }
+  document.getElementById('cal-days-' + qId).innerHTML = daysHtml;
+}
+
+function calNav(qId, delta, unit) {
+  if (!calState[qId]) calState[qId] = { year: 2009, month: 0 };
+  if (unit === 'month') {
+    calState[qId].month += delta;
+    if (calState[qId].month < 0)  { calState[qId].month = 11; calState[qId].year--; }
+    if (calState[qId].month > 11) { calState[qId].month = 0;  calState[qId].year++; }
+  } else {
+    calState[qId].year += delta;
+  }
+  buildCalendar(qId);
+}
+
+function calSelectMonth(qId, val) {
+  calState[qId].month = parseInt(val);
+  buildCalendar(qId);
+}
+
+function calSelectYear(qId, val) {
+  calState[qId].year = parseInt(val);
+  buildCalendar(qId);
+}
+
+function calPickDay(qId, day) {
+  const { year, month } = calState[qId];
+  const dd = String(day).padStart(2,'0');
+  const mm = String(month + 1).padStart(2,'0');
+  const formatted = dd + '/' + mm + '/' + year;
+
+  // Save answer
+  saveTextAnswer(qId, formatted);
+
+  // Update display
+  const display = document.getElementById('dob-display-' + qId);
+  if (display) { display.textContent = formatted; display.style.color = 'var(--ink)'; }
+
+  // Close popup
+  document.getElementById('cal-' + qId).style.display = 'none';
+
+  // Rebuild to show selected highlight
+  buildCalendar(qId);
+}
+
+// ============================================================
+// CLOCK PICKER  (Time of Birth)
+// ============================================================
+function toggleClock(qId) {
+  const popup = document.getElementById('clk-' + qId);
+  const isOpen = popup.style.display !== 'none';
+  document.querySelectorAll('.calendar-popup,.clock-popup').forEach(p => p.style.display = 'none');
+  if (isOpen) return;
+
+  popup.style.display = 'block';
+  // Scroll selected items into view
+  setTimeout(() => {
+    ['h','m'].forEach(part => {
+      const sel = document.querySelector(`#clk-${part}-${qId} .clk-item.selected`);
+      if (sel) sel.scrollIntoView({ block: 'center' });
+    });
+  }, 50);
+
+  // Close on outside click
+  setTimeout(() => {
+    document.addEventListener('click', function handler(e) {
+      const picker = document.querySelector('.time-picker');
+      // Find parent time-picker of this qId
+      const tp = document.getElementById('clk-' + qId).closest('.time-picker');
+      if (tp && !tp.contains(e.target)) {
+        popup.style.display = 'none';
+        document.removeEventListener('click', handler);
+      }
+    });
+  }, 10);
+}
+
+function clkSet(qId, part, val) {
+  if (part === 'h') {
+    document.getElementById('time-h-' + qId).value = val;
+    document.querySelectorAll(`#clk-h-${qId} .clk-item`).forEach(el => {
+      el.classList.toggle('selected', el.textContent === val);
+    });
+  } else if (part === 'm') {
+    document.getElementById('time-m-' + qId).value = val;
+    document.querySelectorAll(`#clk-m-${qId} .clk-item`).forEach(el => {
+      el.classList.toggle('selected', el.textContent === val);
+    });
+  } else if (part === 'ap') {
+    document.getElementById('time-ap-' + qId).value = val;
+    document.getElementById('clk-am-' + qId).classList.toggle('ampm-active', val === 'AM');
+    document.getElementById('clk-pm-' + qId).classList.toggle('ampm-active', val === 'PM');
+  }
+  // Update preview
+  const h  = document.getElementById('time-h-'  + qId).value;
+  const m  = document.getElementById('time-m-'  + qId).value;
+  const ap = document.getElementById('time-ap-' + qId).value;
+  const preview = document.getElementById('time-preview-' + qId);
+  if (preview) preview.textContent = h + ':' + m + ' ' + ap;
+}
+
+function confirmTime(qId) {
+  const h  = document.getElementById('time-h-'  + qId).value;
+  const m  = document.getElementById('time-m-'  + qId).value;
+  const ap = document.getElementById('time-ap-' + qId).value;
+  const formatted = h + ':' + m + ' ' + ap;
+
+  saveTextAnswer(qId, formatted);
+
+  const display = document.getElementById('time-display-' + qId);
+  if (display) { display.textContent = formatted; display.style.color = 'var(--ink)'; }
+
+  document.getElementById('clk-' + qId).style.display = 'none';
+}
 
 // ============================================================
 // BOOT
