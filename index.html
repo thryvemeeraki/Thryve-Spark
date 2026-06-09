@@ -655,10 +655,7 @@
       📊 Your counselor will review your results and share insights with you.<br>
       🕐 Typically within 3–5 working days.
     </div>
-    <div style="background:var(--off-white);border-radius:var(--radius);padding:1.5rem;margin-top:1.5rem;text-align:left">
-      <div class="spark-badge">Your Spark Profile</div>
-      <div id="completion-summary" style="margin-top:1rem;font-size:.9rem;line-height:1.8"></div>
-    </div>
+
   </div>
 </div>
 
@@ -1263,15 +1260,15 @@ async function openStudentForm(token) {
     if (hasBackend()) {
       const res = await apiGet({ action: 'getLink', token });
       if (!res.ok || !res.token) throw new Error('not_found');
-      if (res.status === 'complete') {
-        showInvalid('This assessment has already been completed. Each link is single-use.'); return;
+      if (res.status === 'complete' || res.status === 'used') {
+        showInvalid('This assessment link has already been used and cannot be opened again. Please contact your counselor if you need a new link.'); return;
       }
       linkInfo = res;
     } else {
       linkInfo = getLinkLocalByToken(token);
       if (!linkInfo) throw new Error('not_found');
-      if (linkInfo.status === 'complete') {
-        showInvalid('This assessment has already been completed.'); return;
+      if (linkInfo.status === 'complete' || linkInfo.status === 'used') {
+        showInvalid('This assessment link has already been used and cannot be opened again. Please contact your counselor if you need a new link.'); return;
       }
     }
   } catch(e) {
@@ -1465,9 +1462,63 @@ function updateNavTabs() {
   });
 }
 
-function nextSection() { if (state.currentSection < SECTIONS.length-1) renderSection(state.currentSection+1); }
-function prevSection() { if (state.currentSection > 0) renderSection(state.currentSection-1); }
-function jumpSection(i) { renderSection(i); }
+function nextSection() {
+  const sec = SECTIONS[state.currentSection];
+  const unanswered = sec.questions.filter(q =>
+    state.answers[q.id] === undefined || state.answers[q.id] === '');
+  if (unanswered.length > 0) {
+    unanswered.forEach(q => {
+      const b = document.getElementById('qb-' + q.id);
+      if (b) b.classList.add('unanswered');
+    });
+    const first = document.getElementById('qb-' + unanswered[0].id);
+    if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    showSectionWarning(unanswered.length);
+    return;
+  }
+  hideSectionWarning();
+  if (state.currentSection < SECTIONS.length - 1) renderSection(state.currentSection + 1);
+}
+function prevSection() {
+  hideSectionWarning();
+  if (state.currentSection > 0) renderSection(state.currentSection - 1);
+}
+function jumpSection(i) {
+  if (i > state.currentSection) {
+    const sec = SECTIONS[state.currentSection];
+    const unanswered = sec.questions.filter(q =>
+      state.answers[q.id] === undefined || state.answers[q.id] === '');
+    if (unanswered.length > 0) {
+      unanswered.forEach(q => {
+        const b = document.getElementById('qb-' + q.id);
+        if (b) b.classList.add('unanswered');
+      });
+      const first = document.getElementById('qb-' + unanswered[0].id);
+      if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showSectionWarning(unanswered.length);
+      return;
+    }
+  }
+  hideSectionWarning();
+  renderSection(i);
+}
+function showSectionWarning(count) {
+  let warn = document.getElementById('section-warning');
+  if (!warn) {
+    warn = document.createElement('div');
+    warn.id = 'section-warning';
+    warn.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#c0392b;color:#fff;padding:.85rem 1.75rem;border-radius:10px;font-weight:700;font-size:.9rem;z-index:999;box-shadow:0 4px 20px rgba(0,0,0,.25);display:flex;align-items:center;gap:.6rem;white-space:nowrap';
+    document.body.appendChild(warn);
+  }
+  warn.innerHTML = '&#9888;&#65039; Please answer all ' + count + ' remaining question' + (count > 1 ? 's' : '') + ' in this section before continuing.';
+  warn.style.display = 'flex';
+  clearTimeout(warn._timeout);
+  warn._timeout = setTimeout(() => { warn.style.display = 'none'; }, 4000);
+}
+function hideSectionWarning() {
+  const warn = document.getElementById('section-warning');
+  if (warn) warn.style.display = 'none';
+}
 
 // ============================================================
 // TIMER
@@ -1500,19 +1551,27 @@ function autoSubmit() {
 // SUBMIT
 // ============================================================
 function submitAssessment() {
+  // All questions are mandatory — no bypass allowed
   const unanswered = [];
   SECTIONS.forEach(s => s.questions.forEach(q => {
     if (state.answers[q.id] === undefined || state.answers[q.id] === '') unanswered.push(q.id);
   }));
-
   if (unanswered.length > 0) {
-    const sure = confirm(`You have ${unanswered.length} unanswered question(s). Submit anyway?`);
-    if (!sure) {
-      unanswered.forEach(id => { const b=document.getElementById('qb-'+id); if(b) b.classList.add('unanswered'); });
-      for (let si=0; si<SECTIONS.length; si++) {
-        if (SECTIONS[si].questions.some(q => unanswered.includes(q.id))) { renderSection(si); break; }
+    for (let si = 0; si < SECTIONS.length; si++) {
+      const secU = SECTIONS[si].questions.filter(q => unanswered.includes(q.id));
+      if (secU.length > 0) {
+        renderSection(si);
+        setTimeout(() => {
+          secU.forEach(q => {
+            const b = document.getElementById('qb-' + q.id);
+            if (b) b.classList.add('unanswered');
+          });
+          const first = document.getElementById('qb-' + secU[0].id);
+          if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showSectionWarning(unanswered.length);
+        }, 100);
+        return;
       }
-      return;
     }
   }
   doSubmit(false);
@@ -1602,22 +1661,6 @@ function scoreCognitive() {
 // COMPLETION PAGE
 // ============================================================
 function showCompletionPage(scores) {
-  const s1Map = {MATH:'Mathematics & Logic',SCI:'Science',HIST:'History & Civics',LIT:'Literature & Creativity',GEO:'Geography & Environment',BUS:'Business & Economics'};
-  const s2Map = {VIS:'Visual',AUD:'Auditory',KIN:'Kinesthetic',SOC:'Social/Collaborative',RW:'Reading/Writing'};
-  const s5Map = {R:'Hands-on & Building',I:'Thinking & Investigating',E:'Sports & Action',A:'Arts & Creativity'};
-
-  const s1Top = scores.s1.top.split(',').map(k => s1Map[k.trim()]||k.trim()).join(', ');
-  const s2Top = scores.s2.top.split(',').map(k => s2Map[k.trim()]||k.trim()).join(', ');
-  const s5Top = scores.s5.top.split(',').slice(0,1).map(k => s5Map[k.trim()]||k.trim()).join('');
-  const cogStr = scores.s7cog.correct + ' / ' + scores.s7cog.total;
-
-  document.getElementById('completion-summary').innerHTML = `
-    <p>🎯 <strong>Top Subject Interests:</strong> ${s1Top}</p>
-    <p>🧠 <strong>Dominant Learning Style:</strong> ${s2Top}</p>
-    <p>⚡ <strong>Primary Hobby Drive:</strong> ${s5Top}</p>
-    <p>💡 <strong>Cognitive Score:</strong> ${cogStr} questions answered correctly</p>
-    <p style="color:var(--muted);font-size:.8rem;margin-top:.75rem">A comprehensive Thryve Spark report with all insights has been sent to your counselor and a confirmation email to you.</p>
-  `;
   showPage('complete');
 }
 
